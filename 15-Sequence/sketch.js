@@ -1,9 +1,13 @@
 let mOsc;
 let mLfo;
+let mEnv;
 
-let NOTE_RAMP = 0.05;
-let NOTE_DURATION = 0.25;
-let NOTE_TOTAL = 2 * NOTE_RAMP + NOTE_DURATION;
+let NOTE_ATTACK = 0.05;
+let NOTE_DECAY = 0.1;
+let NOTE_SUSTAIN = 0.0001;
+let NOTE_SUSTAIN_AMP = 0.8;
+let NOTE_RELEASE = 0.2;
+let NOTE_TOTAL = NOTE_ATTACK + NOTE_DECAY + NOTE_SUSTAIN + NOTE_RELEASE;
 
 let FREQS = {
   a: 220,
@@ -32,11 +36,15 @@ function setup() {
   mLfo.amp(60);
   mLfo.start();
 
+  mEnv = new p5.Envelope();
+  mEnv.setADSR(NOTE_ATTACK, NOTE_DECAY, NOTE_SUSTAIN_AMP, NOTE_RELEASE);
+
   mOsc.connect(p5.SoundOut);
   mOsc.freq(mLfo);
+  mOsc.amp(mEnv);
   mOsc.start();
 
-  mLoop = new p5.SoundLoop(onSoundLoop, NOTE_TOTAL + NOTE_RAMP);
+  mLoop = new p5.SoundLoop(onSoundLoop, NOTE_TOTAL);
 
   noLoop();
 }
@@ -54,18 +62,9 @@ function mouseClicked() {
 }
 
 function playNote(noteFreq) {
-  mOsc.amp(0);
   mOsc.freq(noteFreq);
   mLfo.freq(noteFreq / 3);
-  mOsc.amp(1, NOTE_RAMP);
-  mOsc.amp(0, NOTE_RAMP, NOTE_RAMP + NOTE_DURATION);
-}
-
-function keyTyped() {
-  if (key.toLowerCase() in FREQS) {
-    let mF = key in FREQS ? FREQS[key] : 2 * FREQS[key.toLowerCase()];
-    playNote(mF);
-  }
+  mEnv.play(0, NOTE_SUSTAIN);
 }
 
 function onSoundLoop() {
